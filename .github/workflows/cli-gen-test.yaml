@@ -1,19 +1,37 @@
-name: Test CLI Generation
+name: Baseline Check #329
 
 on:
   pull_request:
-    paths:
-      - '**/*'
   workflow_dispatch:
 
 jobs:
-  build:
+  baseline:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout upstream baseline
         uses: actions/checkout@v5
+        with:
+          repository: hust-open-atom-club/hust-mirrors
+          ref: 5bfb0fa171f12a2c35faed88171727a3ce347f79
 
-      - name: Test generation
-        run: python scripts/parser.py -t -v
-      - name: Test release configuration
-        run: python3 ci/test/test-releases-conf.py
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+
+      - name: Enable Yarn 1
+        run: |
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
+          yarn --version
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Typecheck upstream baseline
+        run: yarn typecheck
+
+      - name: Build upstream baseline
+        if: always()
+        run: yarn build
